@@ -1,0 +1,6 @@
+---
+projectName: WurstCommand
+buildMapData:
+  name: MyMapName
+  fileName: MyMapFile
+  author: Blake

@@ -1,0 +1,103 @@
+/**
+	WurstCommand - this package is for setting up a player command handler.
+	Commands handlers are evaluated for use in LIFO.  There is a default handler
+	if no command matches.
+
+	Sample usage:
+
+	```
+	package Commands
+	import WurstCommand
+
+	init
+		// Help command tells the user to kill the enemy.
+		addCommand("help") (p, _cmd, _args) ->
+			printTimedToPlayerClear("Defeat the enemy to advance.", 10., p)
+
+		// A command that starts with `!` sends each character as a separate
+		// command i.e. "-!asdf" -> "-a, -s, -d, -f"
+		addCommand(
+			(_p, cmd, args) -> cmd.substr(1,2) == "!" and args.size() == 0,
+			(_p, cmd, _args) -> begin
+				for i = 2 to cmd.length() - 1
+					handleCommand(p, cmd.substr(i, i + 1), asList())
+			end
+		)
+	```
+*/
+package WurstCommand
+import ClosureEvents
+import LinkedList
+import StringUtils
+
+interface ArgHandler
+	function handleArgs(player p, string cmd, LinkedList<string> args)
+
+interface CmdMatcher
+	function matchCmd(player p, string cmd, LinkedList<string> args) returns bool
+
+class Handler
+	CmdMatcher matcher
+	ArgHandler handler
+	string cmd
+
+	construct(CmdMatcher matcher, ArgHandler handler, string cmd)
+		this.matcher = matcher
+		this.handler = handler
+		this.cmd = cmd
+
+constant argHandlers = new LinkedList<Handler>()
+
+/**
+	Add a command handler which uses a custom matching closure.
+*/
+public function addCommand(string cmd, CmdMatcher cMatcher, ArgHandler handler)
+	argHandlers.push(new Handler(cMatcher, handler, cmd))
+
+/**
+	Add a command handler that matches an exact match on "cmd".
+*/
+public function addCommand(string cmd, ArgHandler handler)
+	addCommand(cmd, (_p, zcmd, _args) -> cmd == zcmd, handler)
+
+init
+	addCommand(null, (_p, _zcmd, _args) -> true) (p, cmd, _args) ->
+		DisplayTimedTextToPlayer(
+			p,
+			0.,
+			0.,
+			10.,
+			"Command |cffffcc00" +
+				cmd +
+				"|r not found! Available commands: [" +
+				argHandlers
+					.map(h -> h.cmd)
+					.filter(t -> t != null)
+					.joinBy(", ") +
+				"]"
+		)
+
+	EventListener.add(EVENT_PLAYER_CHAT_FILTER) ->
+		var str = GetEventPlayerChatString()
+		if str.startsWith("-")
+			parseCommand(str)
+
+/**
+	Handle a command instantly (once).  This can be useful when writing
+	recursive command handlers.
+*/
+public function handleCommand(player p, string str, LinkedList<string> args)
+	let copy = argHandlers.copy()
+	for matcher from copy.backiterator()
+		if matcher.matcher.matchCmd(p, str, args)
+			matcher.handler.handleArgs(p, str, args)
+			break
+
+	destroy copy
+	destroy args
+
+function parseCommand(string str)
+	let p = GetTriggerPlayer()
+	var args = str.substring(1).split(" ")
+	var cstr = args.get(0)
+	handleCommand(p, cstr, args)
