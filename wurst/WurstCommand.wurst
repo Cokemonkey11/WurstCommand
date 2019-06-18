@@ -30,10 +30,18 @@ import ClosureEvents
 import LinkedList
 import StringUtils
 
-interface ArgHandler
+/**
+	Argument handler: what to execute when a command has been matched.
+	Ownership is implicitly static - the closure is never recycled.
+*/
+public interface ArgHandler
 	function handleArgs(player p, string cmd, LinkedList<string> args)
 
-interface CmdMatcher
+/**
+	Command matcher: how to decide if a command should match a handler.
+	Ownership is implicitly static - the closure is never recycled.
+*/
+public interface CmdMatcher
 	function matchCmd(player p, string cmd, LinkedList<string> args) returns bool
 
 class Handler
