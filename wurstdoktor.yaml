@@ -1,0 +1,41 @@
+---
+- Package:
+    doc: ~
+    name: Commands
+    classes: []
+    enums: []
+    free_fns:
+      - doc: Add a command handler which uses a custom matching closure.
+        static_: false
+        extensor: ~
+        name: addCommand
+        params:
+          - typ: string
+            name: cmd
+          - typ: CmdMatcher
+            name: cMatcher
+          - typ: ArgHandler
+            name: handler
+        returns: ~
+      - doc: "Add a command handler that matches an exact match on \"cmd\"."
+        static_: false
+        extensor: ~
+        name: addCommand
+        params:
+          - typ: string
+            name: cmd
+          - typ: ArgHandler
+            name: handler
+        returns: ~
+      - doc: "Handle a command instantly (once).  This can be useful when writing\n\trecursive command handlers."
+        static_: false
+        extensor: ~
+        name: handleCommand
+        params:
+          - typ: player
+            name: p
+          - typ: string
+            name: str
+          - typ: LinkedList<string>
+            name: args
+        returns: ~
