@@ -1,5 +1,5 @@
 /**
-	WurstCommand - this package is for setting up a player command handler.
+	WurstCommand - this package is for setting up a player chat command handler.
 	Commands handlers are evaluated for use in LIFO.  There is a default handler
 	if no command matches.
 
@@ -7,6 +7,10 @@
 
 	```
 	package Commands
+	import ClosureTimers
+	import LinkedList
+	import Time
+
 	import WurstCommand
 
 	init
@@ -14,13 +18,31 @@
 		addCommand("help") (p, _cmd, _args) ->
 			printTimedToPlayerClear("Defeat the enemy to advance.", 10., p)
 
+		// "Remind" uses a custom matcher to ignore incomplete remind requests.
+		//
+		// "-remind me in 15 seconds"
+		// > Reminding you in 15 seconds"
+		// ...
+		// > Reminder: 15 seconds have passed.
+		addCommand(
+			"remind",
+			(_p, _cmd, args) -> args.get(1) == "me" and args.get(2) == "in" and args.get(4) == "seconds",
+			(p, _cmd, args) -> begin
+				let secs = args.get(3).toReal().seconds()
+				printTimedToPlayer("Reminding you in " + secs.displayVerbose(), 30., p)
+				doAfter(secs.seconds) ->
+					printTimedToPlayer("Reminder: " + secs.displayVerbose() + " have passed.", 30., p)
+			end
+		)
+
 		// A command that starts with `!` sends each character as a separate
 		// command i.e. "-!asdf" -> "-a, -s, -d, -f"
 		addCommand(
-			(_p, cmd, args) -> cmd.substr(1,2) == "!" and args.size() == 0,
-			(_p, cmd, _args) -> begin
+			null,
+			(_p, cmd, args) -> cmd.substring(1,2) == "!" and args.size() == 0,
+			(p, cmd, _args) -> begin
 				for i = 2 to cmd.length() - 1
-					handleCommand(p, cmd.substr(i, i + 1), asList())
+					handleCommand(p, cmd.substring(i, i + 1), asList<string>())
 			end
 		)
 	```
@@ -32,6 +54,7 @@ import StringUtils
 
 /**
 	Argument handler: what to execute when a command has been matched.
+
 	Ownership is implicitly static - the closure is never recycled.
 */
 public interface ArgHandler
@@ -39,6 +62,7 @@ public interface ArgHandler
 
 /**
 	Command matcher: how to decide if a command should match a handler.
+
 	Ownership is implicitly static - the closure is never recycled.
 */
 public interface CmdMatcher
@@ -63,7 +87,7 @@ public function addCommand(string cmd, CmdMatcher cMatcher, ArgHandler handler)
 	argHandlers.push(new Handler(cMatcher, handler, cmd))
 
 /**
-	Add a command handler that matches an exact match on "cmd".
+	Add a command handler that matches an exact match on `cmd`.
 */
 public function addCommand(string cmd, ArgHandler handler)
 	addCommand(cmd, (_p, zcmd, _args) -> cmd == zcmd, handler)
@@ -86,7 +110,7 @@ init
 		)
 
 	EventListener.add(EVENT_PLAYER_CHAT_FILTER) ->
-		var str = GetEventPlayerChatString()
+		let str = GetEventPlayerChatString()
 		if str.startsWith("-")
 			parseCommand(str)
 
