@@ -52,6 +52,9 @@ import ClosureEvents
 import LinkedList
 import StringUtils
 
+/** Whether or not to detect invalid commands and show a list of available commands */
+@configurable public constant ADD_DEFAULT_HANDLER = true
+
 /**
 	Argument handler: what to execute when a command has been matched.
 
@@ -93,21 +96,22 @@ public function addCommand(string cmd, ArgHandler handler)
 	addCommand(cmd, (_p, zcmd, _args) -> cmd == zcmd, handler)
 
 init
-	addCommand(null, (_p, _zcmd, _args) -> true) (p, cmd, _args) ->
-		DisplayTimedTextToPlayer(
-			p,
-			0.,
-			0.,
-			10.,
-			"Command |cffffcc00" +
-				cmd +
-				"|r not found! Available commands: [" +
-				argHandlers
-					.map(h -> h.cmd)
-					.filter(t -> t != null)
-					.joinBy(", ") +
-				"]"
-		)
+	if ADD_DEFAULT_HANDLER
+		addCommand(null, (_p, _zcmd, _args) -> true) (p, cmd, _args) ->
+			DisplayTimedTextToPlayer(
+				p,
+				0.,
+				0.,
+				10.,
+				"Command |cffffcc00" +
+					cmd +
+					"|r not found! Available commands: [" +
+					argHandlers
+						.map(h -> h.cmd)
+						.filter(t -> t != null)
+						.joinBy(", ") +
+					"]"
+			)
 
 	EventListener.add(EVENT_PLAYER_CHAT_FILTER) ->
 		let str = GetEventPlayerChatString()
